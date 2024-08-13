@@ -32,13 +32,13 @@ SERVICE_MESSAGE="READSB service is not running anymore. Please check it."
 SERVICE_RECOVERED_MESSAGE="READSB service is running again!"
 STARTUP_MESSAGE="Bratwurst-ADSB Monitoring Script has started successfully!"
 
-# Send startup notification (only once)
-if [ ! -f $STARTUP_NOTIFICATION_FILE ]; then
-    curl -s -X POST "https://api.telegram.org/bot$BOT_TOKEN/sendMessage" \
-    -d chat_id="$CHAT_ID" \
-    -d text="$STARTUP_MESSAGE"
-    touch $STARTUP_NOTIFICATION_FILE
-fi
+# Send startup notification (always on start)
+curl -s -X POST "https://api.telegram.org/bot$BOT_TOKEN/sendMessage" \
+-d chat_id="$CHAT_ID" \
+-d text="$STARTUP_MESSAGE"
+
+# Create or update the startup notification file
+touch $STARTUP_NOTIFICATION_FILE
 
 # Get the current time
 CURRENT_TIME=$(date +%s)
