@@ -59,7 +59,7 @@ copy_files() {
     sudo chmod +x "$SCRIPT_DIR/bratwurst_monitor.sh"
 
     # Replace the placeholder path in the systemd service file
-    sed -i "s|/home/username/adsb_scripts/bratwurst_monitor.sh|$SCRIPT_DIR/bratwurst_monitor.sh|g" bratwurst_monitor.service
+   sed -i "s|ExecStart=.*|ExecStart=$SCRIPT_DIR/bratwurst_monitor.sh|g" bratwurst_monitor.service
 
     # Copy systemd service and timer files
     sudo cp bratwurst_monitor.service /etc/systemd/system/
