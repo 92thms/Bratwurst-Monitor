@@ -2,9 +2,21 @@
 
 # Load configuration from config.yaml
 CONFIG_FILE="config.yaml"
+
+if [ ! -f "$CONFIG_FILE" ]; then
+    echo "Error: Configuration file '$CONFIG_FILE' not found. Exiting."
+    exit 1
+fi
+
 DEVICE_ID=$(grep 'device_id:' $CONFIG_FILE | awk '{print $2}' | tr -d '"')
 BOT_TOKEN=$(grep 'telegram_bot_token:' $CONFIG_FILE | awk '{print $2}' | tr -d '"')
 CHAT_ID=$(grep 'telegram_chat_id:' $CONFIG_FILE | awk '{print $2}' | tr -d '"')
+
+if [ -z "$BOT_TOKEN" ] || [ -z "$CHAT_ID" ]; then
+    echo "Error: Telegram Bot Token or Chat ID is missing in '$CONFIG_FILE'. Exiting."
+    exit 1
+fi
+
 
 # Other constants
 SERVICE_NAME="readsb.service" # Service to monitor (constant)
