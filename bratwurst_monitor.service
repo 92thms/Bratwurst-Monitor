@@ -1,0 +1,9 @@
+[Unit]
+Description=Monitor readsb.service and USB device
+
+[Service]
+Type=oneshot
+ExecStart=/home/username/adsb_scripts/system_monitor.sh # Replace with your actual script path
+
+[Install]
+WantedBy=multi-user.target
