@@ -1,0 +1,5 @@
+# config.yaml.sample
+
+device_id: "PLACEHOLDER_FOR_DEVICE_ID"
+telegram_bot_token: "PLACEHOLDER_FOR_TELEGRAM_BOT_TOKEN"
+telegram_chat_id: "PLACEHOLDER_FOR_TELEGRAM_CHAT_ID"

@@ -1,11 +1,11 @@
 #!/bin/bash
 
 # Colors for visual appeal
-GREEN="\\033[0;32m"
-CYAN="\\033[0;36m"
-RED="\\033[0;31m"
-YELLOW="\\033[1;33m"
-NC="\\033[0m" # No Color
+GREEN="\033[0;32m"
+CYAN="\033[0;36m"
+RED="\033[0;31m"
+YELLOW="\033[1;33m"
+NC="\033[0m" # No Color
 
 # Function to display the header with ASCII art
 display_header() {
@@ -43,11 +43,13 @@ get_telegram_bot_details() {
     read -p "Enter your Telegram Chat ID: " TELEGRAM_CHAT_ID
 }
 
-# Function to replace placeholders in the script
-replace_placeholders() {
-    sed -i "s|PLACEHOLDER_FOR_DEVICE_ID|$USB_DEVICE_ID|g" bratwurst_monitor.sh
-    sed -i "s|PLACEHOLDER_FOR_TELEGRAM_BOT_TOKEN|$TELEGRAM_BOT_TOKEN|g" bratwurst_monitor.sh
-    sed -i "s|PLACEHOLDER_FOR_TELEGRAM_CHAT_ID|$TELEGRAM_CHAT_ID|g" bratwurst_monitor.sh
+# Function to generate the config.yaml from the sample
+generate_config() {
+    cp config.yaml.sample config.yaml
+    sed -i "s|PLACEHOLDER_FOR_DEVICE_ID|$USB_DEVICE_ID|g" config.yaml
+    sed -i "s|PLACEHOLDER_FOR_TELEGRAM_BOT_TOKEN|$TELEGRAM_BOT_TOKEN|g" config.yaml
+    sed -i "s|PLACEHOLDER_FOR_TELEGRAM_CHAT_ID|$TELEGRAM_CHAT_ID|g" config.yaml
+    echo -e "${GREEN}Configuration file 'config.yaml' created.${NC}"
 }
 
 # Function to copy files to correct paths (excluding bratwurst_monitor.sh)
@@ -78,7 +80,7 @@ enable_and_start_service() {
 display_header
 select_usb_device
 get_telegram_bot_details
-replace_placeholders
+generate_config
 copy_files
 enable_and_start_service
 
