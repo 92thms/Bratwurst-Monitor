@@ -13,7 +13,7 @@ This project monitors the health of your SDR stick (e.g., RTL2838) and readsb.se
 1. **Clone the Repository:**
 
    ```bash
-   git clone https://github.com/92thms/Bratwurst-ADSB-Monitoring.git
+   git clone https://github.com/92thms/Bratwurst-Monitor.git
    cd Bratwurst-ADSB-Monitoring
    ```
 
