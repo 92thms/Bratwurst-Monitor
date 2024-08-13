@@ -1,7 +1,10 @@
 #!/bin/bash
 
+# Determine the directory where the script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 # Load configuration from config.yaml
-CONFIG_FILE="config.yaml"
+CONFIG_FILE="$SCRIPT_DIR/config.yaml"
 
 if [ ! -f "$CONFIG_FILE" ]; then
     echo "Error: Configuration file '$CONFIG_FILE' not found. Exiting."
@@ -17,7 +20,6 @@ if [ -z "$BOT_TOKEN" ] || [ -z "$CHAT_ID" ]; then
     exit 1
 fi
 
-
 # Other constants
 SERVICE_NAME="readsb.service" # Service to monitor (constant)
 LAST_NOTIFICATION_FILE="/tmp/last_notification_time" # File to track the last notification time
@@ -32,7 +34,9 @@ STARTUP_MESSAGE="Bratwurst-ADSB Monitoring Script has started successfully!"
 
 # Send startup notification (only once)
 if [ ! -f $STARTUP_NOTIFICATION_FILE ]; then
-    curl -s -X POST "https://api.telegram.org/bot$BOT_TOKEN/sendMessage"     -d chat_id="$CHAT_ID"     -d text="$STARTUP_MESSAGE"
+    curl -s -X POST "https://api.telegram.org/bot$BOT_TOKEN/sendMessage" \
+    -d chat_id="$CHAT_ID" \
+    -d text="$STARTUP_MESSAGE"
     touch $STARTUP_NOTIFICATION_FILE
 fi
 
@@ -46,12 +50,16 @@ LAST_STATUS=$(cat $LAST_STATUS_FILE 2>/dev/null || echo "unknown")
 if ! lsusb | grep -q "$DEVICE_ID"; then
     if [ "$LAST_STATUS" != "hardware_down" ]; then
         # Send notification immediately if device goes down
-        curl -s -X POST "https://api.telegram.org/bot$BOT_TOKEN/sendMessage"         -d chat_id="$CHAT_ID"         -d text="$DEVICE_MESSAGE"
+        curl -s -X POST "https://api.telegram.org/bot$BOT_TOKEN/sendMessage" \
+        -d chat_id="$CHAT_ID" \
+        -d text="$DEVICE_MESSAGE"
         echo $CURRENT_TIME > $LAST_NOTIFICATION_FILE
         echo "hardware_down" > $LAST_STATUS_FILE
     elif [ $TIME_DIFF -ge 86400 ]; then
         # Send reminder if device stays down for 24 hours
-        curl -s -X POST "https://api.telegram.org/bot$BOT_TOKEN/sendMessage"         -d chat_id="$CHAT_ID"         -d text="$DEVICE_MESSAGE"
+        curl -s -X POST "https://api.telegram.org/bot$BOT_TOKEN/sendMessage" \
+        -d chat_id="$CHAT_ID" \
+        -d text="$DEVICE_MESSAGE"
         echo $CURRENT_TIME > $LAST_NOTIFICATION_FILE
     fi
 else
@@ -59,18 +67,24 @@ else
     if ! systemctl is-active --quiet $SERVICE_NAME; then
         if [ "$LAST_STATUS" != "service_down" ]; then
             # Send notification immediately if service goes down
-            curl -s -X POST "https://api.telegram.org/bot$BOT_TOKEN/sendMessage"             -d chat_id="$CHAT_ID"             -d text="$SERVICE_MESSAGE"
+            curl -s -X POST "https://api.telegram.org/bot$BOT_TOKEN/sendMessage" \
+            -d chat_id="$CHAT_ID" \
+            -d text="$SERVICE_MESSAGE"
             echo $CURRENT_TIME > $LAST_NOTIFICATION_FILE
             echo "service_down" > $LAST_STATUS_FILE
         elif [ $TIME_DIFF -ge 86400 ]; then
             # Send reminder if service stays down for 24 hours
-            curl -s -X POST "https://api.telegram.org/bot$BOT_TOKEN/sendMessage"             -d chat_id="$CHAT_ID"             -d text="$SERVICE_MESSAGE"
+            curl -s -X POST "https://api.telegram.org/bot$BOT_TOKEN/sendMessage" \
+            -d chat_id="$CHAT_ID" \
+            -d text="$SERVICE_MESSAGE"
             echo $CURRENT_TIME > $LAST_NOTIFICATION_FILE
         fi
     else
         # If the service is running and was previously marked as down, send a recovery message
         if [ "$LAST_STATUS" == "service_down" ] || [ "$LAST_STATUS" == "hardware_down" ]; then
-            curl -s -X POST "https://api.telegram.org/bot$BOT_TOKEN/sendMessage"             -d chat_id="$CHAT_ID"             -d text="$SERVICE_RECOVERED_MESSAGE"
+            curl -s -X POST "https://api.telegram.org/bot$BOT_TOKEN/sendMessage" \
+            -d chat_id="$CHAT_ID" \
+            -d text="$SERVICE_RECOVERED_MESSAGE"
             rm -f $LAST_NOTIFICATION_FILE
         fi
         echo "running" > $LAST_STATUS_FILE
