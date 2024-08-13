@@ -2,6 +2,8 @@
 
 This project monitors the health of your SDR stick (e.g., RTL2838) and readsb.service. It sends notifications to a Telegram chat in case of issues or recoveries.
 
+Informs you within 30s of a downtime and also sends a reminder notification every 24h if the service or device stays down. 
+
 ## Prerequisites
 
 - A RaspberryPi (or other) with an SDR stick (e.g., RTL2838) running Bratwurst-ADSB or similar.
