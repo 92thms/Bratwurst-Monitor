@@ -25,26 +25,43 @@ SERVICE_NAME="readsb.service" # Service to monitor (constant)
 LAST_NOTIFICATION_FILE="/tmp/last_notification_time" # File to track the last notification time
 LAST_STATUS_FILE="/tmp/last_service_status" # File to track the last known service status
 STARTUP_NOTIFICATION_FILE="/tmp/bratwurst_monitor_startup" # File to ensure startup notification is sent only once
+FAILURE_NOTIFICATION_FILE="/tmp/bratwurst_monitor_failure" # File to ensure failure notification is sent only once
 
 # Messages
 DEVICE_MESSAGE="SDR Device is not detected. Please check the connection."
 SERVICE_MESSAGE="READSB service is not running anymore. Please check it."
 SERVICE_RECOVERED_MESSAGE="READSB service is running again!"
 STARTUP_MESSAGE="Bratwurst-ADSB Monitoring Script has started successfully!"
+FAILURE_MESSAGE="Bratwurst-ADSB Monitoring Script has failed or stopped unexpectedly!"
 
-# Send startup notification (always on start)
-curl -s -X POST "https://api.telegram.org/bot$BOT_TOKEN/sendMessage" \
--d chat_id="$CHAT_ID" \
--d text="$STARTUP_MESSAGE"
-
-# Create or update the startup notification file
-touch $STARTUP_NOTIFICATION_FILE
+# Send startup notification (only once)
+if [ ! -f $STARTUP_NOTIFICATION_FILE ]; then
+    curl -s -X POST "https://api.telegram.org/bot$BOT_TOKEN/sendMessage" \
+    -d chat_id="$CHAT_ID" \
+    -d text="$STARTUP_MESSAGE"
+    touch $STARTUP_NOTIFICATION_FILE
+fi
 
 # Get the current time
 CURRENT_TIME=$(date +%s)
 LAST_NOTIFICATION_TIME=$(cat $LAST_NOTIFICATION_FILE 2>/dev/null || echo 0)
 TIME_DIFF=$((CURRENT_TIME - LAST_NOTIFICATION_TIME))
 LAST_STATUS=$(cat $LAST_STATUS_FILE 2>/dev/null || echo "unknown")
+
+# Check if the service has failed or stopped unexpectedly
+if ! systemctl is-active --quiet bratwurst_monitor.service; then
+    if [ ! -f $FAILURE_NOTIFICATION_FILE ] || [ $TIME_DIFF -ge 86400 ]; then
+        curl -s -X POST "https://api.telegram.org/bot$BOT_TOKEN/sendMessage" \
+        -d chat_id="$CHAT_ID" \
+        -d text="$FAILURE_MESSAGE"
+        echo $CURRENT_TIME > $LAST_NOTIFICATION_FILE
+        touch $FAILURE_NOTIFICATION_FILE
+    fi
+    exit 1
+else
+    # Remove the failure notification file if the service is running
+    rm -f $FAILURE_NOTIFICATION_FILE
+fi
 
 # Check USB Device
 if ! lsusb | grep -q "$DEVICE_ID"; then
