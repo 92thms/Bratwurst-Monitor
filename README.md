@@ -14,7 +14,7 @@ This project monitors the health of your SDR stick (e.g., RTL2838) and readsb.se
 
    ```bash
    git clone https://github.com/92thms/Bratwurst-Monitor.git
-   cd Bratwurst-ADSB-Monitoring
+   cd Bratwurst-Monitor
    ```
 
 2. **Run the Setup Script:**
