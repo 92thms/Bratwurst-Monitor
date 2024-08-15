@@ -32,7 +32,7 @@ Also sends a reminder notification every 24h if the service or device stays down
    The setup process will:
    - Prompt you to select your USB device (SDR stick).
    - Ask for your Telegram Bot Token and Chat ID.
-   - Configure the `system_monitor.sh` script with your details.
+   - Setup the config.yaml
    - Set up the systemd service and timer to start monitoring.
 
 ## Uninstallation
