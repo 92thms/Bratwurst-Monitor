@@ -59,6 +59,7 @@ copy_files() {
 
     # Ensure bratwurst_monitor.sh is executable
     sudo chmod +x "$SCRIPT_DIR/bratwurst_monitor.sh"
+    sudo chmod +x "$SCRIPT_DIR/uninstall.sh"
 
     # Replace the placeholder path in the systemd service file
    sed -i "s|ExecStart=.*|ExecStart=$SCRIPT_DIR/bratwurst_monitor.sh|g" bratwurst_monitor.service
