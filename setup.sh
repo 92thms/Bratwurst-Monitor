@@ -1,11 +1,11 @@
 #!/bin/bash
 
 # Colors for visual appeal
-GREEN="\033[0;32m"
-CYAN="\033[0;36m"
-RED="\033[0;31m"
-YELLOW="\033[1;33m"
-NC="\033[0m" # No Color
+GREEN="\\033[0;32m"
+CYAN="\\033[0;36m"
+RED="\\033[0;31m"
+YELLOW="\\033[1;33m"
+NC="\\033[0m" # No Color
 
 # Function to display the header with ASCII art
 display_header() {
@@ -76,6 +76,20 @@ enable_and_start_service() {
     echo -e "${GREEN}System monitor has been successfully set up and is now running!${NC}"
 }
 
+# Send startup notification
+send_startup_notification() {
+    BOT_TOKEN=$(grep 'telegram_bot_token:' config.yaml | awk '{print $2}' | tr -d '"')
+    CHAT_ID=$(grep 'telegram_chat_id:' config.yaml | awk '{print $2}' | tr -d '"')
+
+    STARTUP_MESSAGE="🚀 Bratwurst-ADSB Monitoring Script has started successfully!"
+
+    if [ ! -z "$BOT_TOKEN" ] && [ ! -z "$CHAT_ID" ]; then
+        curl -s -X POST "https://api.telegram.org/bot$BOT_TOKEN/sendMessage" \
+        -d chat_id="$CHAT_ID" \
+        -d text="$STARTUP_MESSAGE"
+    fi
+}
+
 # Main script execution
 display_header
 select_usb_device
@@ -83,6 +97,7 @@ get_telegram_bot_details
 generate_config
 copy_files
 enable_and_start_service
+send_startup_notification
 
 echo -e "${CYAN}Configuration complete!${NC} ${GREEN}Enjoy your freshly set-up system monitor!${NC}"
 exit 0
