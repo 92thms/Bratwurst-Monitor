@@ -100,5 +100,5 @@ copy_files
 enable_and_start_service
 send_startup_notification
 
-echo -e "${CYAN}Configuration complete!${NC} ${GREEN}Enjoy your freshly set-up system monitor!${NC}"
+echo -e "${CYAN}Configuration complete!${NC}"
 exit 0
