@@ -70,7 +70,7 @@ while true; do
                 DOWN_DURATION=$((CURRENT_TIME - DOWN_SINCE))
                 if [ $DOWN_DURATION -ge 300 ]; then # 5 minutes = 300 seconds
                     LOGS=$(journalctl -eu $SERVICE_NAME -n 10)
-                    FULL_MESSAGE="$SERVICE_MESSAGE\n\n\`\`\`\n$LOGS\n\`\`\`"
+                    FULL_MESSAGE="$SERVICE_MESSAGE\`\`\`$LOGS\`\`\`"
                     if [ "$LAST_STATUS" != "service_down" ]; then
                         # Send notification if service has been down for more than 5 minutes
                         curl -s -X POST "https://api.telegram.org/bot$BOT_TOKEN/sendMessage" \
