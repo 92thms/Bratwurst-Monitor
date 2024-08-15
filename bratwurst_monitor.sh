@@ -24,7 +24,6 @@ fi
 SERVICE_NAME="readsb.service" # Service to monitor (constant)
 LAST_NOTIFICATION_FILE="/tmp/last_notification_time" # File to track the last notification time
 LAST_STATUS_FILE="/tmp/last_service_status" # File to track the last known service status
-STARTUP_NOTIFICATION_FILE="/tmp/bratwurst_monitor_startup" # File to ensure startup notification is sent only once
 DOWN_SINCE_FILE="/tmp/down_since_time" # File to track when the service went down
 
 # Messages with emojis
@@ -33,13 +32,10 @@ SERVICE_MESSAGE="❌ READSB service is not running anymore. Please check it."
 SERVICE_RECOVERED_MESSAGE="✅ READSB service is running again!"
 STARTUP_MESSAGE="🚀 Bratwurst-ADSB Monitoring Script has started successfully!"
 
-# Send startup notification (only once)
-if [ ! -f $STARTUP_NOTIFICATION_FILE ]; then
-    curl -s -X POST "https://api.telegram.org/bot$BOT_TOKEN/sendMessage" \
-    -d chat_id="$CHAT_ID" \
-    -d text="$STARTUP_MESSAGE"
-    touch $STARTUP_NOTIFICATION_FILE
-fi
+# Send startup notification every time the service starts
+curl -s -X POST "https://api.telegram.org/bot$BOT_TOKEN/sendMessage" \
+-d chat_id="$CHAT_ID" \
+-d text="$STARTUP_MESSAGE"
 
 # Monitoring loop
 while true; do
@@ -50,7 +46,7 @@ while true; do
 
     # Check USB Device
     if ! lsusb | grep -q "$DEVICE_ID"; then
-        if [ "$LAST_STATUS" != "hardware_down" ]; then
+        if [ "$LAST_STATUS" != "hardware_down" ];then
             # Send notification immediately if device goes down
             curl -s -X POST "https://api.telegram.org/bot$BOT_TOKEN/sendMessage" \
             -d chat_id="$CHAT_ID" \
