@@ -65,18 +65,21 @@ if ! lsusb | grep -q "$DEVICE_ID"; then
 else
     # Check Service Status
     if ! systemctl is-active --quiet $SERVICE_NAME; then
+        # Collect logs if service is down
+        LOGS=$(journalctl -eu $SERVICE_NAME -n 10)
+        FULL_MESSAGE="$SERVICE_MESSAGE\n\nLogs:\n$LOGS"
         if [ "$LAST_STATUS" != "service_down" ]; then
             # Send notification immediately if service goes down
             curl -s -X POST "https://api.telegram.org/bot$BOT_TOKEN/sendMessage" \
             -d chat_id="$CHAT_ID" \
-            -d text="$SERVICE_MESSAGE"
+            -d text="$FULL_MESSAGE"
             echo $CURRENT_TIME > $LAST_NOTIFICATION_FILE
             echo "service_down" > $LAST_STATUS_FILE
         elif [ $TIME_DIFF -ge 86400 ]; then
             # Send reminder if service stays down for 24 hours
             curl -s -X POST "https://api.telegram.org/bot$BOT_TOKEN/sendMessage" \
             -d chat_id="$CHAT_ID" \
-            -d text="$SERVICE_MESSAGE"
+            -d text="$FULL_MESSAGE"
             echo $CURRENT_TIME > $LAST_NOTIFICATION_FILE
         fi
     else
