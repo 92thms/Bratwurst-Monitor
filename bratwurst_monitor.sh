@@ -25,12 +25,13 @@ SERVICE_NAME="readsb.service" # Service to monitor (constant)
 LAST_NOTIFICATION_FILE="/tmp/last_notification_time" # File to track the last notification time
 LAST_STATUS_FILE="/tmp/last_service_status" # File to track the last known service status
 STARTUP_NOTIFICATION_FILE="/tmp/bratwurst_monitor_startup" # File to ensure startup notification is sent only once
+DOWN_SINCE_FILE="/tmp/down_since_time" # File to track when the service went down
 
-# Messages
-DEVICE_MESSAGE="SDR Device is not detected. Please check the connection."
-SERVICE_MESSAGE="READSB service is not running anymore. Please check it."
-SERVICE_RECOVERED_MESSAGE="READSB service is running again!"
-STARTUP_MESSAGE="Bratwurst-ADSB Monitoring Script has started successfully!"
+# Messages with emojis
+DEVICE_MESSAGE="⚠️ SDR Device is not detected. Please check the connection."
+SERVICE_MESSAGE="❌ READSB service is not running anymore. Please check it."
+SERVICE_RECOVERED_MESSAGE="✅ READSB service is running again!"
+STARTUP_MESSAGE="🚀 Bratwurst-ADSB Monitoring Script has started successfully!"
 
 # Send startup notification (only once)
 if [ ! -f $STARTUP_NOTIFICATION_FILE ]; then
@@ -40,56 +41,70 @@ if [ ! -f $STARTUP_NOTIFICATION_FILE ]; then
     touch $STARTUP_NOTIFICATION_FILE
 fi
 
-# Get the current time
-CURRENT_TIME=$(date +%s)
-LAST_NOTIFICATION_TIME=$(cat $LAST_NOTIFICATION_FILE 2>/dev/null || echo 0)
-TIME_DIFF=$((CURRENT_TIME - LAST_NOTIFICATION_TIME))
-LAST_STATUS=$(cat $LAST_STATUS_FILE 2>/dev/null || echo "unknown")
+# Monitoring loop
+while true; do
+    CURRENT_TIME=$(date +%s)
+    LAST_NOTIFICATION_TIME=$(cat $LAST_NOTIFICATION_FILE 2>/dev/null || echo 0)
+    TIME_DIFF=$((CURRENT_TIME - LAST_NOTIFICATION_TIME))
+    LAST_STATUS=$(cat $LAST_STATUS_FILE 2>/dev/null || echo "unknown")
 
-# Check USB Device
-if ! lsusb | grep -q "$DEVICE_ID"; then
-    if [ "$LAST_STATUS" != "hardware_down" ]; then
-        # Send notification immediately if device goes down
-        curl -s -X POST "https://api.telegram.org/bot$BOT_TOKEN/sendMessage" \
-        -d chat_id="$CHAT_ID" \
-        -d text="$DEVICE_MESSAGE"
-        echo $CURRENT_TIME > $LAST_NOTIFICATION_FILE
-        echo "hardware_down" > $LAST_STATUS_FILE
-    elif [ $TIME_DIFF -ge 86400 ]; then
-        # Send reminder if device stays down for 24 hours
-        curl -s -X POST "https://api.telegram.org/bot$BOT_TOKEN/sendMessage" \
-        -d chat_id="$CHAT_ID" \
-        -d text="$DEVICE_MESSAGE"
-        echo $CURRENT_TIME > $LAST_NOTIFICATION_FILE
-    fi
-else
-    # Check Service Status
-    if ! systemctl is-active --quiet $SERVICE_NAME; then
-        # Collect logs if service is down
-        LOGS=$(journalctl -eu $SERVICE_NAME -n 10)
-        FULL_MESSAGE="$SERVICE_MESSAGE\n\nLogs:\n$LOGS"
-        if [ "$LAST_STATUS" != "service_down" ]; then
-            # Send notification immediately if service goes down
+    # Check USB Device
+    if ! lsusb | grep -q "$DEVICE_ID"; then
+        if [ "$LAST_STATUS" != "hardware_down" ]; then
+            # Send notification immediately if device goes down
             curl -s -X POST "https://api.telegram.org/bot$BOT_TOKEN/sendMessage" \
             -d chat_id="$CHAT_ID" \
-            -d text="$FULL_MESSAGE"
+            -d text="$DEVICE_MESSAGE"
             echo $CURRENT_TIME > $LAST_NOTIFICATION_FILE
-            echo "service_down" > $LAST_STATUS_FILE
+            echo "hardware_down" > $LAST_STATUS_FILE
         elif [ $TIME_DIFF -ge 86400 ]; then
-            # Send reminder if service stays down for 24 hours
+            # Send reminder if device stays down for 24 hours
             curl -s -X POST "https://api.telegram.org/bot$BOT_TOKEN/sendMessage" \
             -d chat_id="$CHAT_ID" \
-            -d text="$FULL_MESSAGE"
+            -d text="$DEVICE_MESSAGE"
             echo $CURRENT_TIME > $LAST_NOTIFICATION_FILE
         fi
     else
-        # If the service is running and was previously marked as down, send a recovery message
-        if [ "$LAST_STATUS" == "service_down" ] || [ "$LAST_STATUS" == "hardware_down" ]; then
-            curl -s -X POST "https://api.telegram.org/bot$BOT_TOKEN/sendMessage" \
-            -d chat_id="$CHAT_ID" \
-            -d text="$SERVICE_RECOVERED_MESSAGE"
-            rm -f $LAST_NOTIFICATION_FILE
+        # Check Service Status
+        if ! systemctl is-active --quiet $SERVICE_NAME; then
+            DOWN_SINCE=$(cat $DOWN_SINCE_FILE 2>/dev/null || echo 0)
+            if [ "$DOWN_SINCE" == "0" ]; then
+                echo $CURRENT_TIME > $DOWN_SINCE_FILE
+            else
+                DOWN_DURATION=$((CURRENT_TIME - DOWN_SINCE))
+                if [ $DOWN_DURATION -ge 300 ]; then # 5 minutes = 300 seconds
+                    LOGS=$(journalctl -eu $SERVICE_NAME -n 10)
+                    FULL_MESSAGE="$SERVICE_MESSAGE\n\n\`\`\`\n$LOGS\n\`\`\`"
+                    if [ "$LAST_STATUS" != "service_down" ]; then
+                        # Send notification if service has been down for more than 5 minutes
+                        curl -s -X POST "https://api.telegram.org/bot$BOT_TOKEN/sendMessage" \
+                        -d chat_id="$CHAT_ID" \
+                        -d text="$FULL_MESSAGE" \
+                        -d parse_mode="Markdown"
+                        echo $CURRENT_TIME > $LAST_NOTIFICATION_FILE
+                        echo "service_down" > $LAST_STATUS_FILE
+                    elif [ $TIME_DIFF -ge 86400 ]; then
+                        # Send reminder if service stays down for 24 hours
+                        curl -s -X POST "https://api.telegram.org/bot$BOT_TOKEN/sendMessage" \
+                        -d chat_id="$CHAT_ID" \
+                        -d text="$FULL_MESSAGE" \
+                        -d parse_mode="Markdown"
+                        echo $CURRENT_TIME > $LAST_NOTIFICATION_FILE
+                    fi
+                fi
+            fi
+        else
+            # Service is running again
+            if [ "$LAST_STATUS" == "service_down" ] || [ "$LAST_STATUS" == "hardware_down" ]; then
+                curl -s -X POST "https://api.telegram.org/bot$BOT_TOKEN/sendMessage" \
+                -d chat_id="$CHAT_ID" \
+                -d text="$SERVICE_RECOVERED_MESSAGE"
+                rm -f $LAST_NOTIFICATION_FILE
+            fi
+            rm -f $DOWN_SINCE_FILE
+            echo "running" > $LAST_STATUS_FILE
         fi
-        echo "running" > $LAST_STATUS_FILE
     fi
-fi
+    
+    sleep 30
+done
