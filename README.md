@@ -8,7 +8,7 @@ Also sends a reminder notification every 24h if the service or device stays down
 ## Prerequisites
 
 - A RaspberryPi (or other) with an SDR stick (e.g., RTL2838) running Bratwurst-ADSB or similar.
-- A Telegram account and bot.
+- A Telegram account and bot. (https://gist.github.com/nafiesl/4ad622f344cd1dc3bb1ecbe468ff9f8a) 
 - systemd.
 
 ## Setup Instructions
